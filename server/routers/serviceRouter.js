@@ -52,6 +52,7 @@ const validateService = (req, res, next) => {
 router.get('/dashboard', isLoggedIn,serviceController.renderDashboardPage);
 
 
+router.get('/partials',isLoggedIn, serviceController.getActivityLog);
 
 
 // Employee Routes

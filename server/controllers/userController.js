@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../../models/user');
 const catchAsync = require('../../utils/catchAsync');
+const Activity = require('../../models/activitylog');
 
 
 
@@ -16,6 +17,18 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+
+// Function to log activity
+const logActivity = async (user, action) => {
+  const activity = new Activity({
+    user: user,
+    action: action,
+    timestamp: new Date(),
+  });
+  await activity.save();
+};
+
+
 
 exports.registrationForm = (req, res) => {
     res.render('users/registrationForm');
@@ -43,11 +56,16 @@ exports.loginForm = (req, res) => {
 }
 
 //login a user
-exports.loginUser = (req, res) => {
-  const { username } = req.user; 
+exports.loginUser = async (req, res) => {
+  const { username } = req.user;
+
+  // Log sign-in activity
+  await logActivity(username, 'signed in');
+
   req.flash('success', `Welcome back, ${username}!`);
   res.redirect('dashboard');
 };
+
 
 //logout
 exports.logout = (req, res, next) => {

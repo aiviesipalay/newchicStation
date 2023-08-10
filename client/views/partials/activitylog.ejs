@@ -1,0 +1,15 @@
+<% layout('/layouts/boilerplate') %>
+
+
+<div class="activity-log">
+  <% activities.forEach(activity => { %>
+    <div class="activity-item">
+      <div class="activity-info">
+        <span class="activity-timestamp"><%= activity.timestamp.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }) %></span>
+        <span class="activity-user"><%= activity.user %></span>
+      </div>
+      <div class="activity-action"><%= activity.action %></div>
+    </div>
+  <% }); %>
+</div>
+  

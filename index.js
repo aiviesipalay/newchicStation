@@ -26,6 +26,7 @@ const serviceRouter = require('./server/routers/serviceRouter');
 const userRouter = require('./server/routers/userRouter');
 
 
+
 //configuration ejs-mate
 app.engine('ejs', ejsMate);
 
@@ -61,6 +62,7 @@ app.use((req, res, next) => {
   res.locals.error = req.flash('error');
   next();
 })
+
 app.use((req, res, next) => {
   res.locals.username = req.user ? req.user.username : null;
   next();

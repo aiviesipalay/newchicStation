@@ -4,9 +4,10 @@ const Employee = require('../../models/employee');
 const Service = require('../../models/service');
 const Image = require('../../models/image');
 const User = require('../../models/user');
-const ServicePage = require ('../../models/servicePage');
+const ServicePage = require('../../models/servicePage');
 const catchAsync = require('../../utils/catchAsync');
 const cloudinary = require('../../utils/cloudinary');
+const Activity = require('../../models/activitylog');
 
 
 
@@ -36,6 +37,22 @@ mongoose
   });
 
 
+
+// Function to log activity
+const logActivity = async (user, action) => {
+  const activity = new Activity({
+    user: user,
+    action: action,
+    timestamp: new Date(),
+  });
+  await activity.save();
+};
+
+exports.getActivityLog = catchAsync(async (req, res, next) => {
+  // Fetch activity log entries from the database
+  const activities = await Activity.find().sort({ timestamp: -1 }).limit(5);
+    res.render('partials/activitylog', { activities });
+});
 
 
 
@@ -115,7 +132,7 @@ exports.allServices = async (req, res) => {
 
 // View add Services form
 exports.newServiceForm = (req, res) => {
-  res.status(200).render('ListService/index', { services: [] }); 
+  res.status(200).render('ListService/index', { services: [] });
 }
 
 
@@ -123,6 +140,10 @@ exports.newServiceForm = (req, res) => {
 exports.saveService = catchAsync(async (req, res) => {
   const service = new Service(req.body.service);
   await service.save();
+
+  // Log activity
+  await logActivity(req.user, 'added a service');
+
   req.flash('success', 'You have successfully added a service!');
   res.redirect('/ListService');
 
@@ -141,6 +162,10 @@ exports.getService = catchAsync(async (req, res) => {
 exports.updateService = catchAsync(async (req, res) => {
   const serviceId = req.params.id;
   const service = await Service.findByIdAndUpdate(serviceId, { ...req.body.service });
+
+  // Log activity
+  await logActivity(req.user, 'updated a listing');
+
   req.flash('success', 'You have successfully updated a listing!');
   res.redirect('/ListService');
 });
@@ -151,6 +176,10 @@ exports.updateService = catchAsync(async (req, res) => {
 exports.deleteService = catchAsync(async (req, res) => {
   const serviceId = req.params.id;
   await Service.findByIdAndDelete(serviceId);
+
+  // Log activity
+  await logActivity(req.user, 'deleted a service');
+
   req.flash('error', 'You have successfully deleted a service!');
   res.redirect('/ListService');
 })
@@ -165,20 +194,24 @@ exports.viewImage = async (req, res) => {
 
 //UPLOAD IMAGe
 exports.uploadImage = catchAsync(async (req, res, next) => {
-  
-    // Upload image to cloudinary
-    const result = await cloudinary.uploader.upload(req.file.path);
-    // Create new user
-    let image = new Image({
-      title: req.body.title,
-      avatar: result.secure_url,
-      cloudinary_id: result.public_id,
-    });
-    // Save user
-    await image.save();
-    req.flash('success', 'You have successfully uploaded an Image!');
-    res.redirect('/images');
-  
+
+  // Upload image to cloudinary
+  const result = await cloudinary.uploader.upload(req.file.path);
+  // Create new image
+  let image = new Image({
+    title: req.body.title,
+    avatar: result.secure_url,
+    cloudinary_id: result.public_id,
+  });
+  // Save image
+  await image.save();
+
+  // Log activity
+  await logActivity(req.user, 'uploaded an image');
+
+  req.flash('success', 'You have successfully uploaded an Image!');
+  res.redirect('/images');
+
 });
 
 
@@ -191,15 +224,19 @@ exports.deleteImage = catchAsync(async (req, res, next) => {
   const confirmed = req.query.confirm;
   if (!confirmed) {
     // Delete image from Cloudinary
-  await cloudinary.uploader.destroy(image.cloudinary_id);
+    await cloudinary.uploader.destroy(image.cloudinary_id);
 
-  // Delete image from the database
-  await Image.findByIdAndRemove(req.params.id);
-  req.flash('error', 'You have successfully deleted an image!');
+    // Delete image from the database
+    await Image.findByIdAndRemove(req.params.id);
+
+    // Log activity
+    await logActivity(req.user, 'deleted an image');
+
+    req.flash('error', 'You have successfully deleted an image!');
     res.redirect('/images');
     return;
   }
-  
+
   req.flash('error', 'You have successfully deleted an image!');
   res.redirect('/images');
 });
